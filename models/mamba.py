@@ -149,6 +149,7 @@ class MambaModel(nn.Module):
             module.bias.data.zero_()
 
     def forward(self, inputs, mask):
+        inputs = inputs.long()
         embds = self.word_embedding(inputs)
         text_vec = self.mamba_encoder(embds, mask)
         return text_vec
