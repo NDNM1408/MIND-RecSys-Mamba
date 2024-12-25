@@ -1,9 +1,6 @@
+import logging
 import torch
 from torch import nn
-import logging
-
-
-from types import SimpleNamespace
 
 class AttentionPooling(nn.Module):
     def __init__(self, config):
@@ -31,10 +28,14 @@ class AttentionPooling(nn.Module):
         x = torch.bmm(x.permute(0, 2, 1), alpha)
         x = torch.reshape(x, (bz, -1))
         return x
+
+
 class MambaBlock(nn.Module):
     def __init__(self, config):
         super(MambaBlock, self).__init__()
         self.config = config
+
+        # Convolutional layer with padding to maintain sequence length
         self.conv = nn.Conv1d(
             in_channels=config.hidden_size,
             out_channels=config.hidden_size,
@@ -53,21 +54,13 @@ class MambaBlock(nn.Module):
     def forward(self, hidden_states, attention_mask=None):
         residual = hidden_states
 
-        # Apply 1D convolution
-        hidden_states = hidden_states.transpose(1, 2)  # (batch_size, hidden_size, seq_len)
-        hidden_states = self.conv(hidden_states)
-        hidden_states = hidden_states.transpose(1, 2)  # (batch_size, seq_len, hidden_size)
+        # Ensure hidden_states has the correct shape: (batch_size, seq_len, hidden_size)
+        batch_size, seq_len, hidden_size = hidden_states.shape
 
-        # Ensure sequence length matches residual
-        if hidden_states.shape[1] != residual.shape[1]:
-            # Trim or pad hidden_states to match residual's sequence length
-            seq_len_diff = residual.shape[1] - hidden_states.shape[1]
-            if seq_len_diff > 0:
-                # Pad hidden_states
-                hidden_states = torch.nn.functional.pad(hidden_states, (0, 0, 0, seq_len_diff))
-            else:
-                # Trim hidden_states
-                hidden_states = hidden_states[:, :residual.shape[1], :]
+        # Apply 1D convolution
+        hidden_states = hidden_states.transpose(1, 2)  # Shape: (batch_size, hidden_size, seq_len)
+        hidden_states = self.conv(hidden_states)       # Shape: (batch_size, hidden_size, seq_len)
+        hidden_states = hidden_states.transpose(1, 2)  # Shape: (batch_size, seq_len, hidden_size)
 
         # Apply feed-forward layer
         hidden_states = self.fc(hidden_states)
@@ -79,7 +72,6 @@ class MambaBlock(nn.Module):
         return hidden_states
 
 
-# Define the MambaEncoder
 class MambaEncoder(nn.Module):
     def __init__(self, config, pooler_count=1):
         super(MambaEncoder, self).__init__()
@@ -120,7 +112,7 @@ class MambaEncoder(nn.Module):
         all_hidden_states = [embeddings]
 
         for layer_module in self.encoders:
-            layer_outputs = layer_module(all_hidden_states[-1])
+            layer_outputs = layer_module(all_hidden_states[-1], attention_mask)
             all_hidden_states.append(layer_outputs)
 
         assert len(self.poolers) > pooler_index
@@ -129,7 +121,6 @@ class MambaEncoder(nn.Module):
         return output
 
 
-# Define the MambaModel
 class MambaModel(nn.Module):
     def __init__(self, config):
         super(MambaModel, self).__init__()
@@ -149,9 +140,13 @@ class MambaModel(nn.Module):
             module.bias.data.zero_()
 
     def forward(self, inputs, mask):
+        # Ensure inputs are of type torch.long
         inputs = inputs.long()
-        embds = self.word_embedding(inputs)
-        text_vec = self.mamba_encoder(embds, mask)
+        
+        # Get embeddings
+        embds = self.word_embedding(inputs)  # Shape: (batch_size, seq_len, hidden_size)
+        
+        # Pass through the Mamba encoder
+        text_vec = self.mamba_encoder(embds, mask)  # Shape: (batch_size, hidden_size)
+        
         return text_vec
-
-
