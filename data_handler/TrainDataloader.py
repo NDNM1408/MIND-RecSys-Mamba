@@ -15,7 +15,7 @@ import torch
 import torch.distributed as dist
 from torch.utils.data import IterableDataset
 
-from data_handler.streaming import StreamRead erForSpeedy
+from data_handler.streaming import StreamReaderForSpeedy
 from utility.utils import MODEL_CLASSES
 
 
