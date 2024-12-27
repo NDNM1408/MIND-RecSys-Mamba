@@ -528,6 +528,7 @@ class MambaMIND(torch.nn.Module):
 
     def forward(self, inputs, mask):
         # embds = self.word_embedding(input_ids)
+        print("HEHEHE ", inputs.shape)
         text_vec = self.mamba_model(inputs, mask)
         return text_vec
 
