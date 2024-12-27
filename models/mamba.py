@@ -6,8 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from pscan import pscan
-
+from models.pscan import pscan
 """
 
 This file closely follows the mamba_simple.py from the official Mamba implementation, and the mamba-minimal by @johnma2006.
