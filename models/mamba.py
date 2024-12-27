@@ -53,7 +53,7 @@ class MambaConfig:
     mup_base_width: float = 128 # width=d_model
 
     pscan: bool = True # use parallel scan mode or sequential mode when training
-    use_cuda: bool = False # use official CUDA implementation when training (not compatible with (b)float16)
+    use_cuda: bool = True # use official CUDA implementation when training (not compatible with (b)float16)
 
     def __post_init__(self):
         self.d_inner = self.expand_factor * self.d_model # E*D = ED in comments
@@ -462,7 +462,7 @@ class MambaEncoder(nn.Module):
     def __init__(self, config, pooler_count=1):
         super(MambaEncoder, self).__init__()
         self.config = config
-        self.mamba_config = MambaConfig(config.num_hidden_layers, n_layers=1) 
+        self.mamba_config = MambaConfig(config.hidden_size, n_layers=1) 
         self.encoders = nn.ModuleList([Mamba(self.mamba_config) for _ in range(config.num_hidden_layers)])
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -528,7 +528,6 @@ class MambaMIND(torch.nn.Module):
 
     def forward(self, inputs, mask):
         # embds = self.word_embedding(input_ids)
-        print("HEHEHE ", inputs.shape)
         text_vec = self.mamba_model(inputs, mask)
         return text_vec
 
