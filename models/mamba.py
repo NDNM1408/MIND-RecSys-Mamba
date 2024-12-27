@@ -55,7 +55,7 @@ class MambaBlock(nn.Module):
         residual = hidden_states
 
         # Ensure hidden_states has the correct shape: (batch_size, seq_len, hidden_size)
-        batch_size, seq_len, hidden_size = hidden_states.shape
+        print("AAAAA", hidden_states.shape)
 
         # Apply 1D convolution
         hidden_states = hidden_states.transpose(1, 2)  # Shape: (batch_size, hidden_size, seq_len)
@@ -140,13 +140,6 @@ class MambaModel(nn.Module):
             module.bias.data.zero_()
 
     def forward(self, inputs, mask):
-        # Ensure inputs are of type torch.long
-        inputs = inputs.long()
-        
-        # Get embeddings
-        embds = self.word_embedding(inputs)  # Shape: (batch_size, seq_len, hidden_size)
-        
-        # Pass through the Mamba encoder
-        text_vec = self.mamba_encoder(embds, mask)  # Shape: (batch_size, hidden_size)
+        text_vec = self.mamba_encoder(inputs, mask)  # Shape: (batch_size, hidden_size)
         
         return text_vec

@@ -129,12 +129,14 @@ class UserEncoder(nn.Module):
 
     def forward(self, user_news_vecs, log_mask,
                 user_log_mask=False):
+        print("BEFORE ", user_news_vecs.shape)
         user_vec = self.get_user_log_vec(
             user_news_vecs, log_mask,
             self.args.user_log_length,
             self.news_attn_pool, self.news_pad_doc,
             user_log_mask
         )
+        print("AFTER ", user_vec.shape)
         return user_vec
 
 

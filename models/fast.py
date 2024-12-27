@@ -189,7 +189,6 @@ class FastformerEncoder(nn.Module):
         embeddings = input_embs
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
-        # print(embeddings.size())
         all_hidden_states = [embeddings]
 
         for i, layer_module in enumerate(self.encoders):
