@@ -2,32 +2,11 @@ import torch
 from torch import nn
 from transformers import BertConfig
 from utility.utils import MODEL_CLASSES
-from models.mamba import MambaModel
+from models.mamba import MambaMIND
 from transformers.models.bert.modeling_bert import BertModel
+ffconfig = BertConfig.from_json_file('models/ffconfig.json')
 
-mamba_config = {
-    "hidden_size": 256,               # Hidden dimension (same as Fastformer)
-    "hidden_dropout_prob": 0.2,       # Dropout probability (same as Fastformer)
-    "num_hidden_layers": 1,           # Number of Mamba layers (same as Fastformer)
-    "hidden_act": "gelu",             # Activation function (same as Fastformer)
-    "intermediate_size": 256,         # Intermediate size (same as Fastformer)
-    "max_position_embeddings": 256,   # Maximum sequence length (same as Fastformer)
-    "type_vocab_size": 2,             # Token type vocabulary size (same as Fastformer)
-    "vocab_size": 30522,              # Vocabulary size (same as Fastformer)
-    "layer_norm_eps": 1e-12,          # Layer normalization epsilon (same as Fastformer)
-    "initializer_range": 0.02,        # Initializer range (same as Fastformer)
-    "pooler_type": "weightpooler",    # Pooler type (same as Fastformer)
-    "enable_fp16": False,             # FP16 training (same as Fastformer)
 
-    # Mamba-specific parameters
-    "d_state": 16,                    # State dimension for SSM
-    "d_conv": 3,                      # Convolution kernel size
-    "expand": 2,                      # Expansion factor for hidden dimension
-}
-
-# Convert config to a simple namespace for easier access
-from types import SimpleNamespace
-mamba_config = SimpleNamespace(**mamba_config)
 
 class AttentionPooling(nn.Module):
     def __init__(self, d_h, hidden_size, drop_rate):
@@ -125,7 +104,7 @@ class UserEncoder(nn.Module):
             args.news_dim, args.news_dim,
             drop_rate=args.drop_rate)
 
-        self.encoder = MambaModel(config=mamba_config)
+        self.encoder = MambaMIND(ffconfig)
         # self.encoder = BertModel(ffconfig)
 
     def get_user_log_vec(
