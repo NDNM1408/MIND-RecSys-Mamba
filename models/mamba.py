@@ -433,25 +433,30 @@ class RMSNorm(nn.Module):
 
 
 class AttentionPooling(nn.Module):
-    def __init__(self, d_h, hidden_size, drop_rate):
+    def __init__(self, config):
+        self.config = config
         super(AttentionPooling, self).__init__()
-        self.att_fc1 = nn.Linear(d_h, hidden_size // 2)
-        self.att_fc2 = nn.Linear(hidden_size // 2, 1)
-        self.drop_layer = nn.Dropout(p=drop_rate)
+        self.att_fc1 = nn.Linear(config.hidden_size, config.hidden_size)
+        self.att_fc2 = nn.Linear(config.hidden_size, 1)
+        self.apply(self.init_weights)
+
+    def init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
 
     def forward(self, x, attn_mask=None):
         bz = x.shape[0]
-        e = self.att_fc1(x)  # (bz, seq_len, 200)
+        e = self.att_fc1(x)
         e = nn.Tanh()(e)
-        alpha = self.att_fc2(e)  # (bz, seq_len, 1)
-
+        alpha = self.att_fc2(e)
         alpha = torch.exp(alpha)
         if attn_mask is not None:
             alpha = alpha * attn_mask.unsqueeze(2)
         alpha = alpha / (torch.sum(alpha, dim=1, keepdim=True) + 1e-8)
-
         x = torch.bmm(x.permute(0, 2, 1), alpha)
-        x = torch.reshape(x, (bz, -1))  # (bz, 400)
+        x = torch.reshape(x, (bz, -1))
         return x
 class MambaEncoder(nn.Module):
     def __init__(self, config, pooler_count=1):
